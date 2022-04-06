@@ -1,18 +1,27 @@
-GRASS = 1
-BUSH = 1 << 1
-SHEEP = 1 << 2
-
 moves = {"left": (-1, 0), "up": (0, -1), "right": (1, 0), "down": (0, 1)}
 sorts = {"left": lambda x: x[0], "up": lambda x: x[1], "right": lambda x: -x[0], "down": lambda x: -x[1]}
-filetoi = {"_": 0, "G": GRASS, "B": BUSH, "S": SHEEP, "H": GRASS|SHEEP}
-itofile = {y:x for x,y in filetoi.items()}
 
 class Game:
-    def __init__(self, board, sheeps):
-        self.board = board
-        self.sheeps = sheeps
-        self.height = len(board)
-        self.width = len(board[0])
+    def load(self, filename):
+        file = open(filename)
+        self.board = []
+        self.sheeps = []
+        row = []
+        for c in file.read():
+            if c == "\n":
+                self.board.append(row)
+                row = []
+                continue
+            if c == "S":
+                self.sheeps.append([len(row), len(self.board)])
+            if c == "S" or c == "_":
+                row.append(None)
+            else:
+                row.append(c)
+        if len(row):
+            self.board.append(row)
+        self.height = len(self.board)
+        self.width = len(self.board[0])
 
     def getGameState(self):
         return self.board
@@ -20,51 +29,48 @@ class Game:
     def play(self, direction):
         move = moves[direction]
         self.sheeps.sort(key=sorts[direction])
-        for i, sheep in enumerate(self.sheeps):
-            x, y = sheep
-            self.board[y][x] ^= SHEEP
-            while 0 <= x < self.width and 0 <= y < self.height and not self.board[y][x] & BUSH|SHEEP:
-                x += move[0]
-                y += move[1]
-            x -= move[0]
-            y -= move[1]
-            self.board[y][x] ^= SHEEP
-            self.sheeps[i] = (x, y)
+        axe = 0 if move[0] else 1
+        maxL = self.height if axe else self.width
+        end = maxL if move[axe] > 0 else -1
+        cache = [[end, end] for _ in range(max(self.width, self.height))]
+        for sheep in self.sheeps:
+            i = sheep[abs(axe - 1)]
+            end = cache[i][0]
+            cache[i][0] = sheep[axe]
+            while sheep[axe] != end:
+                if (axe == 0 and self.board[i][sheep[axe]] == 'B') or (axe == 1 and self.board[sheep[axe]][i] == 'B'):
+                    break
+                sheep[axe] += move[axe]
+            if sheep[axe] == end:
+                sheep[axe] = cache[i][1]
+            sheep[axe] -= move[axe]
+            cache[i][1] = sheep[axe]
     
     def isWon(self):
         for x, y in self.sheeps:
-            if ~self.board[y][x] & GRASS|SHEEP:
+            if self.board[y][x] != 'G':
                 return False
         return True
     
     def printBoard(self):
-        for row in self.board:
-            for case in row:
-                print(itofile[case], end=" ")
+        c = ''
+        for i in range(len(self.board)):
+            for j in range(len(self.board[i])):
+                if [j, i] in self.sheeps:
+                    if self.board[i][j] == 'G':
+                        c = 'H'
+                    else:
+                        c = 'S'
+                elif self.board[i][j] == None:
+                    c = '_'
+                else:
+                    c = self.board[i][j]
+                print(c, end=' ')
             print()
 
-def parser(filename):
-    file = open(filename)
-    board = []
-    sheeps = []
-    row = []
-    for c in file.read():
-        if c == "\n":
-            board.append(row)
-            row = []
-            continue
-        if c == "S":
-            sheeps.append((len(row), len(board)))
-        try:
-            row.append(filetoi[c])
-        except:
-            print("corrupted map")
-            return None
-    board.append(row)
-    return board, sheeps
-
 if __name__ == "__main__":
-    game = Game(*parser("../assets/maps/big/huge.txt"))
+    game = Game()
+    game.load("../assets/maps/tests/losable.txt")
     while not game.isWon():
         game.printBoard()
         try:
