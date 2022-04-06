@@ -1,7 +1,28 @@
 moves = {"left": (-1, 0), "up": (0, -1), "right": (1, 0), "down": (0, 1)}
 sorts = {"left": lambda x: x[0], "up": lambda x: x[1], "right": lambda x: -x[0], "down": lambda x: -x[1]}
 
+class Cell:
+    def __init__(self, v):
+        self.v = v
+        self.nearest_bushes = {"left": None, "up": None, "right": None, "down": None}
+    
+    def is_bush(self):
+        return self.v == "B"
+    
+    def is_grass(self):
+        return self.v == "G"
+
+
 class Game:
+
+    def compute_bushes(self):
+        for y in range(len(self.board)):
+            for x in range(len(self.board[y])):
+                for direction in moves:
+                    while 0 < x < self.width and 0 < y < self.height:
+                        if self.board[y][x].is_bush():
+                            self.board[y][x].nearest_bushes[direction] = (x, y)
+
     def load(self, filename):
         file = open(filename)
         self.board = []
@@ -15,13 +36,14 @@ class Game:
             if c == "S":
                 self.sheeps.append([len(row), len(self.board)])
             if c == "S" or c == "_":
-                row.append(None)
+                row.append(Cell(None))
             else:
-                row.append(c)
+                row.append(Cell(None))
         if len(row):
             self.board.append(row)
         self.height = len(self.board)
         self.width = len(self.board[0])
+        self.compute_bushes()
 
     def getGameState(self):
         return self.board
@@ -29,23 +51,10 @@ class Game:
     def play(self, direction):
         move = moves[direction]
         self.sheeps.sort(key=sorts[direction])
-        axe = 0 if move[0] else 1
-        maxL = self.height if axe else self.width
-        end = maxL if move[axe] > 0 else -1
-        cache = [[end, end] for _ in range(max(self.width, self.height))]
+        cache = {}
         for sheep in self.sheeps:
-            i = sheep[abs(axe - 1)]
-            end = cache[i][0]
-            cache[i][0] = sheep[axe]
-            while sheep[axe] != end:
-                if (axe == 0 and self.board[i][sheep[axe]] == 'B') or (axe == 1 and self.board[sheep[axe]][i] == 'B'):
-                    break
-                sheep[axe] += move[axe]
-            if sheep[axe] == end:
-                sheep[axe] = cache[i][1]
-            sheep[axe] -= move[axe]
-            cache[i][1] = sheep[axe]
-    
+             nearest_bush = self.board[sheep[0]][sheep[1]].nearest_bushes[direction]
+             if nearest_bush in cache:
     def isWon(self):
         for x, y in self.sheeps:
             if self.board[y][x] != 'G':
@@ -70,7 +79,7 @@ class Game:
 
 if __name__ == "__main__":
     game = Game()
-    game.load("../assets/maps/tests/losable.txt")
+    game.load("../assets/maps/big/huge.txt")
     while not game.isWon():
         game.printBoard()
         try:
