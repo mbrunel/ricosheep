@@ -1,4 +1,4 @@
-from operator import ne
+import queue
 
 class Dot:
     def __init__(self, x, y):
@@ -39,8 +39,7 @@ class Dot:
     def __hash__(self):
         return (self.x, self.y).__hash__()
 
-
-moves = {"left": Dot(-1, 0), "up": Dot(0, -1), "right": Dot(1, 0), "down": Dot(0, 1)}
+MOVES = {"left": Dot(-1, 0), "up": Dot(0, -1), "right": Dot(1, 0), "down": Dot(0, 1)}
 
 class Cell:
     def __init__(self, v):
@@ -55,15 +54,6 @@ class Cell:
 
 
 class Game:
-
-    def compute_bushes(self):
-        for y in range(len(self.board)):
-            for x in range(len(self.board[y])):
-                for direction, move in moves.items():
-                    cell = Dot(x, y)
-                    while -1 < cell.x < self.width and -1 < cell.y < self.height and not self.board[cell.y][cell.x].is_bush():
-                        cell += move
-                    self.board[y][x].nearest_bushes[direction] = cell
 
     def load(self, filename):
         file = open(filename)
@@ -87,11 +77,29 @@ class Game:
         self.width = len(self.board[0])
         self.compute_bushes()
 
-    def getGameState(self):
-        return self.board
-    
-    def play(self, direction):
-        move = moves[direction]
+    def compute_bushes(self):
+        def find_nearest_bush(self, x, y, direction, MOVES):
+            cell = Dot(x, y)
+            if self.board[y][x].is_bush():
+                self.board[y][x].nearest_bushes[direction] = cell
+            else:
+                cell += MOVES[direction]
+                if -1 < cell.x < self.width and -1 < cell.y < self.height:
+                    self.board[y][x].nearest_bushes[direction] = self.board[cell.y][cell.x].nearest_bushes[direction]
+                else:
+                    self.board[y][x].nearest_bushes[direction] = cell
+
+        for y in range(len(self.board)):
+            for x in range(len(self.board[y])):
+                find_nearest_bush(self, x, y, "left", MOVES)
+                find_nearest_bush(self, x, y, "up", MOVES)
+        for y in reversed(range(len(self.board))):
+            for x in reversed(range(len(self.board[y]))):
+                find_nearest_bush(self, x, y, "right", MOVES)
+                find_nearest_bush(self, x, y, "down", MOVES)
+
+    def move(self, direction):
+        move = MOVES[direction]
         cache = {}
         for sheep in self.sheeps:
             nearest_bush = self.board[sheep.y][sheep.x].nearest_bushes[direction]
@@ -100,12 +108,22 @@ class Game:
             cache[nearest_bush] += 1
             sheep.set(nearest_bush - move * cache[nearest_bush])
 
-    def isWon(self):
-        for sheep in self.sheeps:
+    def isWon(self, sheeps):
+        for sheep in sheeps:
             if not self.board[sheep.y][sheep.x].is_grass():
                 return False
         return True
-    
+
+    def solve(self):
+        visited = []
+        to_treat_queue = queue.Queue(self.sheeps, None)
+        while len(to_treat_queue):
+            to_treat = to_treat_list.pop()
+            if self.isWon(to_treat[0]):
+                return to_treat[1]
+            
+
+
     def printBoard(self):
         for i in range(len(self.board)):
             for j in range(len(self.board[i])):
@@ -130,7 +148,7 @@ if __name__ == "__main__":
     while not game.isWon():
         game.printBoard()
         try:
-            game.play(input("Your move : "))
+            game.move(input("Your move : "))
         except KeyError:
             print("You can only enter 'left' 'up' 'down' and 'right'")
         print("*" * game.width * 2)
