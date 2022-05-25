@@ -1,5 +1,5 @@
 """
-Authors: Florian Baudin, Killian Nucci, Matthias Brunel
+Authors: Matthias Brunel
 """
 import fltk
 
@@ -10,7 +10,6 @@ class Router:
     def run(self, view_loader, *args):
         while view_loader:
             view = view_loader(args)
-            view.display()
             while not view.new_view:
                 view.update()
                 view.handle_events()

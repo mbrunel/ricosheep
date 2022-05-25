@@ -396,7 +396,7 @@ def point(x, y, couleur="black", epaisseur=1, tag=""):
 # Image
 
 
-def image(x, y, fichier, ancrage="center", tag=""):
+def image(x, y, fichier, width=0, height=0, ancrage="center", tag=""):
     """
     Affiche l'image contenue dans ``fichier`` avec ``(x, y)`` comme centre. Les
     valeurs possibles du point d'ancrage sont ``'center'``, ``'nw'``, etc.
@@ -409,6 +409,13 @@ def image(x, y, fichier, ancrage="center", tag=""):
     """
     if PIL_AVAILABLE:
         img = Image.open(fichier)
+        if width and height:
+            iw, ih = img.size
+            if (width < iw and iw - width > ih - height) or (width >= iw and width - iw < height - ih):
+                coeff = width / iw
+            else:
+                coeff = height / ih
+            img = img.resize((int(iw * coeff), int(ih * coeff)), Image.ANTIALIAS)
         tkimage = ImageTk.PhotoImage(img)
     else:
         tkimage = tk.PhotoImage(file=fichier)

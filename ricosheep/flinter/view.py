@@ -1,5 +1,5 @@
 """
-Authors: Florian Baudin, Killian Nucci, Matthias Brunel
+Authors: Matthias Brunel
 """
 import fltk
 
@@ -301,16 +301,19 @@ class View:
         self.statics.append(
             View.Box(self.grids[kwargs.pop("grid", "root")], row, column, **kwargs)
         )
+        self.statics[-1].display()
 
     def text_box(self, row, column, **kwargs):
         self.statics.append(
             View.TextBox(self.grids[kwargs.pop("grid", "root")], row, column, **kwargs)
         )
+        self.statics[-1].display()
 
     def button(self, row, column, **kwargs):
         self.dynamics.append(
             View.Button(self.grids[kwargs.pop("grid", "root")], row, column, **kwargs)
         )
+        self.dynamics[-1].display()
 
     def text_field(self, row, column, **kwargs):
         def activate(self, field):
@@ -326,6 +329,7 @@ class View:
         self.dynamics.append(field)
         if kwargs.get("active"):
             field.on_click()
+        field.display()
 
     def grid(self, name, row, column, width, height, nb_rows, nb_columns):
         self.grids[name] = Grid(
@@ -459,8 +463,8 @@ class View:
         for bound_event in self.bound_events:
             bound_event.handle_event(ev, tev)
 
-    def display(self):
-        for widget in self.statics:
-            widget.display()
-        for widget in self.dynamics:
-            widget.display()
+    # def display(self):
+    #     for widget in self.statics:
+    #         widget.display()
+    #     for widget in self.dynamics:
+    #         widget.display()

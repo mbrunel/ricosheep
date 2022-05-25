@@ -1,8 +1,10 @@
 from flinter import Router
-from views import menu
+from views import menu, board, settings
 
 routes = {
     "menu": menu,
+    "board": board,
+    "settings": settings,
     "exit": None
 }
 
